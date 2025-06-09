@@ -24,7 +24,8 @@ Base.metadata.create_all(bind=engine)
 
 # Configurar CORS para permitir conexiones desde tu frontend
 origins = [
-    "http://localhost:5173",  # Vite (React) local
+    "http://localhost:5173",                     # para desarrollo local
+    "https://famlez-front.vercel.app",          # tu dominio en producción
 ]
 
 app.add_middleware(
