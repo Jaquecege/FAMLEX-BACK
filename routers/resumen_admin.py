@@ -46,7 +46,7 @@ async def resumen_divorcio_admin(
                 "model": "gemma:2b-instruct",
                 "prompt": prompt
             }),
-            timeout=60
+            timeout=180
         )
         if response.status_code == 200:
             resumen_generado = response.json()["response"].strip()
