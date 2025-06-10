@@ -4,12 +4,12 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from routers.auth import obtener_usuario_actual
-import requests
-import json
+# import requests  # ❌ Comentado para omitir Ollama
+# import json
 
 router = APIRouter()
 
-OLLAMA_URL = "http://20.66.107.40:11434"  # IP pública de la VM donde corre Ollama
+# OLLAMA_URL = "http://20.66.107.40:11434"  # ❌ No se usará
 
 @router.post("/resumen/divorcio_admin")
 async def resumen_divorcio_admin(
@@ -36,33 +36,28 @@ async def resumen_divorcio_admin(
         6. El régimen matrimonial fue: {regimenadm}.
     """
 
-    prompt = f"Resume jurídicamente en un solo párrafo, usando lenguaje técnico, el siguiente escrito legal:\n{contenido_legal}\nResumen:"
+    # ❌ Este bloque se omite temporalmente
+    # prompt = f"Resume jurídicamente en un solo párrafo, usando lenguaje técnico, el siguiente escrito legal:\n{contenido_legal}\nResumen:"
+    #
+    # try:
+    #     response = requests.post(
+    #         f"{OLLAMA_URL}/api/generate",
+    #         headers={"Content-Type": "application/json"},
+    #         data=json.dumps({
+    #             "model": "gemma:2b-instruct",
+    #             "prompt": prompt
+    #         }),
+    #         timeout=180
+    #     )
+    #     if response.status_code == 200:
+    #         resumen_generado = response.json()["response"].strip()
+    #     else:
+    #         resumen_generado = f"No se pudo generar el resumen. Código: {response.status_code}"
+    #
+    # except Exception as e:
+    #     resumen_generado = f"Error al conectarse con el modelo: {str(e)}"
 
-    try:
-        response = requests.post(
-            f"{OLLAMA_URL}/api/generate",
-            headers={"Content-Type": "application/json"},
-            data=json.dumps({
-                "model": "gemma:2b-instruct",
-                "prompt": prompt
-            }),
-            timeout=180,
-            stream=True  # Importante para manejar respuestas en streaming
-        )
+    # ✅ Resumen temporal fijo
+    resumen_generado = "Resumen omitido temporalmente durante pruebas del sistema."
 
-        if response.status_code == 200:
-            resumen_generado = ""
-            for line in response.iter_lines():
-                if line:
-                    try:
-                        data = json.loads(line.decode("utf-8"))
-                        resumen_generado += data.get("response", "")
-                    except json.JSONDecodeError:
-                        continue
-        else:
-            resumen_generado = f"No se pudo generar el resumen. Código: {response.status_code}"
-
-    except Exception as e:
-        resumen_generado = f"Error al conectarse con el modelo: {str(e)}"
-
-    return JSONResponse({"resumen": resumen_generado.strip()})
+    return JSONResponse({"resumen": resumen_generado})
