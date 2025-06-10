@@ -4,9 +4,12 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from routers.auth import obtener_usuario_actual
-import subprocess
+import requests
+import json
 
 router = APIRouter()
+
+OLLAMA_URL = "http://20.66.107.40:11434"  # Reemplaza si cambia tu IP pública
 
 @router.post("/resumen/guarda_custodia")
 async def resumen_guarda_custodia(
@@ -44,18 +47,30 @@ async def resumen_guarda_custodia(
     if desea_visitas.lower().strip() == "si" and visitas:
         resumen += f"Se propone régimen de visitas: {visitas}.\n"
         if restricciones and restricciones.lower().strip() == "si":
-            resumen += f"Se solicitan restricciones a las visitas por razones de seguridad.\n"
+            resumen += "Se solicitan restricciones a las visitas por razones de seguridad.\n"
 
     prompt = (
         f"Resume jurídicamente en un solo párrafo, usando lenguaje técnico, el siguiente escrito legal:\n"
         f"{resumen}\nResumen:"
     )
 
-    comando = ["ollama", "run", "gemma:2b-instruct"]
-    resultado = subprocess.run(comando, input=prompt, capture_output=True, text=True)
+    try:
+        response = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "model": "gemma:2b-instruct",
+                "prompt": prompt
+            }),
+            timeout=60
+        )
 
-    resumen_generado = resultado.stdout.strip() if resultado.returncode == 0 else "No se pudo generar el resumen."
-    subprocess.run(["ollama", "stop", "gemma:2b-instruct"])
+        if response.status_code == 200:
+            resumen_generado = response.json()["response"].strip()
+        else:
+            resumen_generado = f"No se pudo generar el resumen. Código: {response.status_code}"
+
+    except Exception as e:
+        resumen_generado = f"Error al conectarse con el modelo: {str(e)}"
 
     return JSONResponse({"resumen": resumen_generado})
-
