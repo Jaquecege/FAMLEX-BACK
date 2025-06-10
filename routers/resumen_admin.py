@@ -4,12 +4,12 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from routers.auth import obtener_usuario_actual
-import requests  # 👈 Importante
+import requests
 import json
 
 router = APIRouter()
 
-OLLAMA_URL = "http://20.66.107.40:11434"  # 👈 IP pública de la VM
+OLLAMA_URL = "http://20.66.107.40:11434"  # IP pública de la VM donde corre Ollama
 
 @router.post("/resumen/divorcio_admin")
 async def resumen_divorcio_admin(
@@ -46,15 +46,23 @@ async def resumen_divorcio_admin(
                 "model": "gemma:2b-instruct",
                 "prompt": prompt
             }),
-            timeout=180
+            timeout=180,
+            stream=True  # Importante para manejar respuestas en streaming
         )
+
         if response.status_code == 200:
-            resumen_generado = response.json()["response"].strip()
+            resumen_generado = ""
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        data = json.loads(line.decode("utf-8"))
+                        resumen_generado += data.get("response", "")
+                    except json.JSONDecodeError:
+                        continue
         else:
             resumen_generado = f"No se pudo generar el resumen. Código: {response.status_code}"
 
     except Exception as e:
         resumen_generado = f"Error al conectarse con el modelo: {str(e)}"
 
-    return JSONResponse({"resumen": resumen_generado})
-
+    return JSONResponse({"resumen": resumen_generado.strip()})
